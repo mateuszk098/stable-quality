@@ -12,6 +12,7 @@ from torcheval import metrics
 from torchvision import datasets, transforms
 
 from resnet import loaders, networks, trainers
+from visualization import visualize
 
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(42)
@@ -39,19 +40,17 @@ def get_args():
 
 
 def main():
+    run_time = time.strftime("%Y_%m_%d_%H_%M_%S")
+    args = get_args()
+
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     date_fmt = "%Y-%m-%d %H:%M:%S"
     logging.basicConfig(level=logging.INFO, format=log_fmt, datefmt=date_fmt)
     logger = logging.getLogger(__name__)
     logger.info("Training model. This may take a while.")
-
-    run_time = time.strftime("%Y_%m_%d_%H_%M_%S")
-    args = get_args()
-
     logger.info("Training settings:")
     print()
-    args_str = "\n".join(f"{k}:".ljust(15) + f"{v}" for k, v in vars(get_args()).items())
-    print(args_str)
+    print("\n".join(f"{k}:".ljust(15) + f"{v}" for k, v in vars(get_args()).items()))
     print()
 
     train_dataset = datasets.ImageFolder(args.train_path)
@@ -127,6 +126,7 @@ def main():
     run_save_path.mkdir(parents=True, exist_ok=False)
 
     torch.save(resnet.state_dict(), run_save_path / "state_dict.pt")
+    visualize.draw_learning_curves(history, run_save_path / "learning_curves.png")
 
     with open(run_save_path / "history.json", "w") as f:
         json.dump(history, f, indent=4, ensure_ascii=False)
@@ -139,7 +139,7 @@ def main():
             f.write(str(architecture))
 
     print()
-    logger.info("All finished!")
+    logger.info("All done!")
 
 
 if __name__ == "__main__":
