@@ -1,10 +1,13 @@
 import argparse
+import pathlib
 
 import torch
 from PIL import Image
 from torchvision import transforms
 
 from resnet import networks
+
+PROJECT_DIR = pathlib.Path(__file__).resolve().parents[2]
 
 
 def main():
@@ -20,12 +23,13 @@ def main():
             transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         ]
     )
-    img = Image.open(args.img_path)
+
+    img = Image.open(PROJECT_DIR / args.img_path)
     img = img.resize((args.input_size, args.input_size)).convert(mode="RGB")
     img = transform(img).unsqueeze(dim=0)  # type: ignore
 
-    model = networks.SEResNet(args.input_size)
-    model.load_state_dict(torch.load(args.model_path))
+    model = networks.SEResNet()
+    model.load_state_dict(torch.load(PROJECT_DIR / args.model_path))
     model.eval()
 
     with torch.inference_mode():

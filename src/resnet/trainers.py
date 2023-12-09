@@ -52,7 +52,7 @@ def train(
 
         print(
             f"Epoch: {epoch:2d} | "
-            f"time: {t1 - t0:.2f}s | "
+            f"time: {t1 - t0:5.2f}s | "
             f"loss: {train_loss:.5f} | "
             f"acc: {train_acc:.5f} | "
             f"val_loss: {valid_loss:.5f} | "

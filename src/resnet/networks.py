@@ -4,9 +4,8 @@ from . import layers
 
 
 class SEResNet(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self):
         super().__init__()
-        self.out_of_conv_size = input_size // (2**5)  # We have 5 layers with stride=2.
         self.feed_forward = nn.Sequential(
             #
             nn.Conv2d(3, 32, kernel_size=5, stride=2, padding=2),
@@ -31,7 +30,7 @@ class SEResNet(nn.Module):
             #
             nn.Flatten(),
             #
-            nn.Linear(32 * self.out_of_conv_size * self.out_of_conv_size, 256, bias=False),
+            nn.Linear(32 * 7 * 7, 256, bias=False),
             nn.BatchNorm1d(num_features=256),
             nn.Mish(),
             nn.Dropout1d(0.4),

@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import math
 import pathlib
 import time
@@ -17,17 +18,17 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+PROJECT_DIR = pathlib.Path(__file__).resolve().parents[2]
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
-    train_path = "../../data/processed/train/"
-    valid_path = "../../data/processed/valid/"
+    train_path = PROJECT_DIR / "data/processed/train/"
+    valid_path = PROJECT_DIR / "data/processed/valid/"
     parser.add_argument("--train_path", type=str, required=False, default=train_path)
     parser.add_argument("--valid_path", type=str, required=False, default=valid_path)
 
-    parser.add_argument("--input_size", type=int, required=False, default=224)
     parser.add_argument("--model_info", type=bool, required=False, default=False)
 
     parser.add_argument("--batch_size", type=int, required=False, default=32)
@@ -38,8 +39,20 @@ def get_args():
 
 
 def main():
+    log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    date_fmt = "%Y-%m-%d %H:%M:%S"
+    logging.basicConfig(level=logging.INFO, format=log_fmt, datefmt=date_fmt)
+    logger = logging.getLogger(__name__)
+    logger.info("Training model. This may take a while.")
+
     run_time = time.strftime("%Y_%m_%d_%H_%M_%S")
     args = get_args()
+
+    logger.info("Training settings:")
+    print()
+    args_str = "\n".join(f"{k}:".ljust(15) + f"{v}" for k, v in vars(get_args()).items())
+    print(args_str)
+    print()
 
     train_dataset = datasets.ImageFolder(args.train_path)
     valid_dataset = datasets.ImageFolder(args.valid_path)
@@ -81,7 +94,7 @@ def main():
         pin_memory=True,
     )
 
-    resnet = networks.SEResNet(input_size=args.input_size).to(DEVICE)
+    resnet = networks.SEResNet().to(DEVICE)
 
     total_scheduler_steps = args.epochs * int(math.ceil(len(train_dataset) / args.batch_size))
     loss_fn = nn.BCEWithLogitsLoss()
@@ -110,7 +123,7 @@ def main():
         device=DEVICE,
     )
 
-    run_save_path = pathlib.Path("../../models/") / run_time
+    run_save_path = PROJECT_DIR / "models" / run_time
     run_save_path.mkdir(parents=True, exist_ok=False)
 
     torch.save(resnet.state_dict(), run_save_path / "state_dict.pt")
@@ -120,9 +133,13 @@ def main():
 
     if args.model_info:
         with open(run_save_path / "architecture.txt", "w") as f:
-            input_size = (args.batch_size, args.in_channels, args.input_size, args.input_size)
-            architecture = torchinfo.summary(resnet, input_size=input_size)
+            architecture = torchinfo.summary(
+                resnet, input_size=(args.batch_size, 3, 224, 224), verbose=0
+            )
             f.write(str(architecture))
+
+    print()
+    logger.info("All finished!")
 
 
 if __name__ == "__main__":
