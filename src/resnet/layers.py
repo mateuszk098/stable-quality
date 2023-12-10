@@ -68,3 +68,64 @@ class ResidualConnection(nn.Module):
         if self.squeeze_active:
             return self.squeeze_excitation(residual_output) + x_shortcut
         return residual_output
+
+
+class InceptionModule(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        channels1x1,
+        channels3x31,
+        channels3x32,
+        channels5x51,
+        channels5x52,
+        channels3x3pool,
+        squeeze_active=False,
+        squeeze_factor=8,
+    ):
+        super().__init__()
+        self.squeeze_active = squeeze_active
+        self.squeeze_excitation = SqueezeExcitation(
+            channels1x1 + channels3x32 + channels5x52 + channels3x3pool, squeeze_factor
+        )
+        self.branch1x1 = nn.Sequential(
+            nn.Conv2d(in_channels, channels1x1, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(num_features=channels1x1),
+            nn.Mish(),
+        )
+        self.branch3x3_dbl = nn.Sequential(
+            nn.Conv2d(in_channels, channels3x31, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(num_features=channels3x31),
+            nn.Mish(),
+            nn.Conv2d(channels3x31, channels3x32, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(num_features=channels3x32),
+            nn.Mish(),
+        )
+        self.branch5x5_dbl = nn.Sequential(
+            nn.Conv2d(in_channels, channels5x51, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(num_features=channels5x51),
+            nn.Mish(),
+            nn.Conv2d(channels5x51, channels5x52, kernel_size=5, stride=1, padding=2, bias=False),
+            nn.BatchNorm2d(num_features=channels5x52),
+            nn.Mish(),
+        )
+        self.branch3x3_pool = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels, channels3x3pool, kernel_size=1, stride=1, bias=False),
+            nn.BatchNorm2d(num_features=channels3x3pool),
+            nn.Mish(),
+        )
+
+    def forward(self, x):
+        x_concat = torch.cat(
+            (
+                self.branch1x1(x),
+                self.branch3x3_dbl(x),
+                self.branch5x5_dbl(x),
+                self.branch3x3_pool(x),
+            ),
+            dim=1,
+        )
+        if self.squeeze_active:
+            return self.squeeze_excitation(x_concat)
+        return x_concat
