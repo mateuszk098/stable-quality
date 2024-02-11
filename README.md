@@ -1,7 +1,7 @@
-Resilient Tyre Quality Vision
+Stable Quality
 ==============================
 
-Resilient Tyre Quality Vision is a project that utilizes residual neural networks to solve the image classification problem - initially used to classify tyres as defective / non-defective.
+Stable Quality is a project that utilizes residual neural networks to solve the image classification problem - initially used to classify tyres as defective / non-defective.
 
 Project Organization
 ------------
